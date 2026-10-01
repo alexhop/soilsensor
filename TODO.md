@@ -9,6 +9,8 @@
 - [ ] Add a low-voltage cutoff so a drained LiPo is not cycled further
 - [ ] Update the guide's first power-on step to use the `scanner` environment
       and this firmware
+- [ ] Field-test the optional SHT4x on the Catnip build and add it to the
+      assembly guide (wiring, mounting, bill of materials)
 
 ## Known Issues
 

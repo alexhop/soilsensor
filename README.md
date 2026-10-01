@@ -8,12 +8,30 @@ back to deep sleep.
 
 - **Build the hardware:** [docs/assembly-guide.pdf](docs/assembly-guide.pdf)
   (source: [docs/assembly-guide.md](docs/assembly-guide.md))
-- **Firmware:** PlatformIO + Arduino framework, version 0.10.0 (build 19)
+- **Firmware:** PlatformIO + Arduino framework, version 0.11.0 (build 20)
+
+## Key Components
+
+This is the one supported build:
+
+| Component | Role | Required |
+|-----------|------|----------|
+| [Seeed XIAO ESP32-C6](https://www.seeedstudio.com/Seeed-Studio-XIAO-ESP32C6-p-5884.html) | Microcontroller: WiFi, deep sleep, battery monitoring | Yes |
+| [Catnip Electronics I2C soil moisture sensor](https://www.tindie.com/products/miceuz/i2c-soil-moisture-sensor/) | Soil moisture and soil temperature (I2C `0x20`) | Yes |
+| Sensirion SHT4x temperature/humidity sensor, such as the [Adafruit SHT41](https://www.adafruit.com/product/5776) | Air temperature and relative humidity (I2C `0x44`) | Optional |
+
+Around those sit the power parts: a single-cell LiPo, a CN3065 solar charger,
+a 6 V panel, and a 2N7000 MOSFET that switches the sensors off during sleep.
+The assembly guide has the full bill of materials.
+
+The temperature/humidity sensor is detected at boot. If it is not fitted the
+firmware skips it and reports soil readings only; no build flag is needed
+either way.
 
 Status: Catnip readings were validated on a USB-powered bench rig. The MOSFET
-power switching used by the battery build follows the guide's wiring and
-compiles, but has not been field-tested on that hardware yet. See
-[TODO.md](TODO.md).
+power switching used by the battery build, and the SHT4x on that build, follow
+the wiring below and compile, but have not been field-tested on that hardware
+yet. See [TODO.md](TODO.md).
 
 ## Hardware
 
@@ -24,14 +42,18 @@ firmware expects by default:
 |----------|-------------|
 | D0 | Battery divider midpoint (1 MOhm to BAT+, 1 MOhm to GND) |
 | D1 | 2N7000 gate, with 100k pull-down to GND |
-| D4 | Catnip SDA |
-| D5 | Catnip SCL |
-| 3V3 | Catnip VCC |
+| D4 | I2C SDA: Catnip, and SHT4x if fitted |
+| D5 | I2C SCL: Catnip, and SHT4x if fitted |
+| 3V3 | Catnip VCC, SHT4x VIN |
 | GND | 2N7000 source, divider low side |
 | BAT+ / BAT- (pads on the back) | CN3065 BAT+ / BAT-, battery |
 
-The probe's ground returns through the MOSFET (Catnip GND to 2N7000 drain), so
-with the gate low the probe draws nothing during deep sleep.
+Sensor ground returns through the MOSFET (Catnip GND and SHT4x GND to the
+2N7000 drain), so with the gate low the sensors draw nothing during deep sleep.
+
+The assembly guide does not cover the optional SHT4x yet. Wire it in parallel
+with the Catnip: the same four connections, to the same four points. Mount it
+where it sees outside air but stays dry, not inside the sealed enclosure.
 
 ## Quick Start
 
@@ -42,7 +64,7 @@ pip install platformio
 cp src/secrets.example.h src/secrets.h
 $EDITOR src/secrets.h
 
-# Optional: verify wiring first. Expect the Catnip at 0x20.
+# Optional: verify wiring first. Expect the Catnip at 0x20 (and an SHT4x at 0x44).
 pio run -e scanner -t upload
 pio device monitor
 
@@ -103,9 +125,10 @@ Give every node its own `DEVICE_ID`.
 
 Each wake cycle:
 
-1. Switch the probe on through the MOSFET and wait for it to boot.
-2. Take five readings and keep the median, then read the battery voltage.
-3. Switch the probe off.
+1. Switch the sensors on through the MOSFET and wait for the probe to boot.
+2. Take five soil readings and keep the median, read the SHT4x if one is
+   fitted, then read the battery voltage.
+3. Switch the sensors off.
 4. Join WiFi (three attempts, 15 s each).
 5. POST a heartbeat, then the batch of readings.
 6. Ask the server whether a newer firmware build exists; if so, download and
@@ -137,8 +160,8 @@ Sent every cycle, even when the probe was not found. The firmware expects
 ```json
 {
   "deviceId": "soil-1",
-  "firmwareVersion": "0.10.0",
-  "buildNumber": 19,
+  "firmwareVersion": "0.11.0",
+  "buildNumber": 20,
   "location": "Garden",
   "ip": "192.168.1.42",
   "rssi": -54,
@@ -171,6 +194,8 @@ One physical node produces several logical sensors:
 | `-moisture-raw` | `adc_raw` | `mV` | Same median, kept unconverted for range analysis |
 | `-noise` | `adc_raw` | `mV` | Max minus min of the samples in this cycle |
 | `-soil-temp` | `temperature` | `°F` | Probe's on-board temperature |
+| `-air-temp` | `temperature` | `°F` | SHT4x, only when fitted |
+| `-humidity` | `humidity` | `%` | SHT4x, only when fitted |
 | `-battery` | `battery` | `V` | Battery voltage |
 | `-battery-pct` | `battery` | `%` | Estimated state of charge |
 
@@ -183,7 +208,7 @@ The firmware expects `200` and a compact JSON body. If `updateAvailable` is
 `true` it downloads `url` and flashes it to the inactive OTA partition.
 
 ```json
-{"updateAvailable":true,"buildNumber":20,"url":"http://192.168.1.100:3001/firmware/soil-sensor.bin"}
+{"updateAvailable":true,"buildNumber":21,"url":"http://192.168.1.100:3001/firmware/soil-sensor.bin"}
 ```
 
 The response parser is deliberately minimal: flat keys only, and no whitespace
@@ -210,6 +235,7 @@ the 0% and 100% points on the server.
 |---------|--------------|-----|
 | Scanner finds no devices | Wiring error or MOSFET not switching | Check D1 goes high, the MOSFET orientation, and that SDA/SCL are not swapped. |
 | Probe returns 65535 | SDA and SCL swapped | Swap them and re-run the scanner; expect `0x20`. |
+| No air temperature or humidity readings | SHT4x not detected | Run the scanner and expect `0x44`. Its GND must go to the MOSFET drain, not straight to ground. |
 | WiFi will not connect | Out of range or wrong credentials | Test closer to the access point. Check `src/secrets.h`. |
 | Battery drains fast | Probe staying powered in sleep | Probe VCC to probe GND should read 0 V in deep sleep. Check the 100k gate pull-down. |
 | Battery voltage reads 0 or pegged | Divider wired wrong | 1 MOhm from BAT+ to D0, 1 MOhm from D0 to GND. |

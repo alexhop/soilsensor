@@ -34,6 +34,8 @@ static bool catnipFound = false;
 
 #if !ANALOG_SOIL && !CATNIP_SOIL
 static bool stemmaFound = false;
+#endif
+#if !ANALOG_SOIL
 static bool sht41Found  = false;
 #endif
 static bool scd41Found  = false;
@@ -102,10 +104,42 @@ static float medianAdcMillivolts(int pin) {
 }
 
 // ─── I2C probe helper ──────────────────────────────────────
-#if !ANALOG_SOIL && !CATNIP_SOIL
+#if !ANALOG_SOIL
 static bool i2cProbe(uint8_t addr) {
     Wire.beginTransmission(addr);
     return Wire.endTransmission() == 0;
+}
+
+// ─── SHT41 (optional air temp/humidity) ───────────────────
+static void sht41Probe() {
+    if (i2cProbe(ADDR_SHT41)) {
+        if (sht41.begin()) {
+            sht41.setPrecision(SHT4X_HIGH_PRECISION);
+            sht41Found = true;
+            Serial.println("[sensors] SHT41 found (0x44)");
+        } else {
+            Serial.println("[sensors] SHT41 at 0x44 but begin() failed");
+        }
+    } else {
+        Serial.println("[sensors] SHT41 NOT FOUND — skipping");
+    }
+}
+
+static void sht41Read(SensorData* data) {
+    if (!sht41Found) return;
+
+    sensors_event_t humEvent, tempEvent;
+    if (sht41.getEvent(&humEvent, &tempEvent)) {
+        data->airTempC    = tempEvent.temperature;
+        data->airHumidity = humEvent.relative_humidity;
+        data->airAvailable = true;
+        Serial.printf("[sensors] Air: temp=%.1f°C (%.1f°F), humidity=%.1f%%\n",
+                      data->airTempC,
+                      celsiusToFahrenheit(data->airTempC),
+                      data->airHumidity);
+    } else {
+        Serial.println("[sensors] SHT41 read failed");
+    }
 }
 #endif
 
@@ -140,6 +174,8 @@ bool sensorsInit() {
     // Reset flags so USB-mode cycles re-probe (battery mode reboots each cycle)
 #if !ANALOG_SOIL && !CATNIP_SOIL
     stemmaFound = false;
+#endif
+#if !ANALOG_SOIL
     sht41Found  = false;
 #endif
 #if CATNIP_SOIL
@@ -186,8 +222,11 @@ bool sensorsInit() {
         Serial.println("[sensors] Catnip/Chirp NOT FOUND — skipping");
     }
 
-    Serial.printf("[sensors] %d of 1 sensors online\n", (int)catnipFound);
-    return catnipFound;
+    sht41Probe();
+
+    int found = (int)catnipFound + (int)sht41Found;
+    Serial.printf("[sensors] %d of 2 sensors online\n", found);
+    return found > 0;
 #else
     // I2C sensor board: power on via MOSFET, probe each sensor
     pinMode(SENSOR_POWER_PIN, OUTPUT);
@@ -211,18 +250,7 @@ bool sensorsInit() {
         Serial.println("[sensors] STEMMA soil sensor NOT FOUND — skipping");
     }
 
-    // Probe SHT41
-    if (i2cProbe(ADDR_SHT41)) {
-        if (sht41.begin()) {
-            sht41.setPrecision(SHT4X_HIGH_PRECISION);
-            sht41Found = true;
-            Serial.println("[sensors] SHT41 found (0x44)");
-        } else {
-            Serial.println("[sensors] SHT41 at 0x44 but begin() failed");
-        }
-    } else {
-        Serial.println("[sensors] SHT41 NOT FOUND — skipping");
-    }
+    sht41Probe();
 
     // Probe SCD-41
 #if SCD41_ENABLED
@@ -332,6 +360,8 @@ void sensorsRead(SensorData* data) {
         }
     }
 
+    sht41Read(data);
+
 #else
     // ── STEMMA Soil Sensor ──
     if (stemmaFound) {
@@ -361,21 +391,7 @@ void sensorsRead(SensorData* data) {
                       med, data->soilTempC, hi - lo);
     }
 
-    // ── SHT41 ──
-    if (sht41Found) {
-        sensors_event_t humEvent, tempEvent;
-        if (sht41.getEvent(&humEvent, &tempEvent)) {
-            data->airTempC    = tempEvent.temperature;
-            data->airHumidity = humEvent.relative_humidity;
-            data->airAvailable = true;
-            Serial.printf("[sensors] Air: temp=%.1f°C (%.1f°F), humidity=%.1f%%\n",
-                          data->airTempC,
-                          celsiusToFahrenheit(data->airTempC),
-                          data->airHumidity);
-        } else {
-            Serial.println("[sensors] SHT41 read failed");
-        }
-    }
+    sht41Read(data);
 
     // ── SCD-41 (CO2) ──
 #if SCD41_ENABLED

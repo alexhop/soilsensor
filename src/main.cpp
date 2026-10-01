@@ -2,8 +2,8 @@
  * Soil Sensor — ESP32C6 Firmware
  *
  * Hardware: Seeed XIAO ESP32C6
- * Sensors:  Catnip/Chirp I2C soil moisture/temp by default; STEMMA (plus
- *           SHT41 and SCD-41) or an analog probe via build flags
+ * Sensors:  Catnip/Chirp I2C soil moisture/temp, optional SHT41 air
+ *           temp/humidity. Other probes are available via build flags.
  * Power:    3.7V LiPo + CN3065 solar charger + 6V panel
  *           Sensors power-gated via 2N7000 MOSFET on SENSOR_POWER_PIN
  *
