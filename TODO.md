@@ -30,6 +30,5 @@ on D1 and a 1 MOhm battery divider on D0. No environment supports it yet.
 
 ## Housekeeping
 
-- [ ] Choose a license
 - [ ] `test_logic.cpp` re-declares the functions it tests; share the real
       implementations with the firmware instead

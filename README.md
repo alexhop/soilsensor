@@ -323,6 +323,7 @@ seconds of measurement time per cycle and is not included.
 ```
 .
 |-- README.md
+|-- LICENSE
 |-- TODO.md
 |-- platformio.ini            PlatformIO environments
 |-- get_network_flags.py      Build helper: include paths for Arduino-ESP32 3.x
@@ -344,3 +345,7 @@ seconds of measurement time per cycle and is not included.
 +-- tools/
     +-- i2c_scanner.cpp       Standalone I2C bus scanner
 ```
+
+## License
+
+[MIT](LICENSE)
