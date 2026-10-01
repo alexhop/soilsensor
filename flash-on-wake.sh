@@ -1,9 +1,9 @@
 #!/bin/bash
 # Polls for the ESP32C6 USB port and immediately uploads firmware using esptool
 # This is faster than 'pio run -t upload' because it skips the build check.
-# Usage: ./flash-on-wake.sh [env]     (env defaults to soil-1)
+# Usage: ./flash-on-wake.sh [env]     (env defaults to soil-sensor)
 
-ENV="${1:-soil-1}"
+ENV="${1:-soil-sensor}"
 ESPTOOL="$HOME/.platformio/penv/bin/esptool.py"
 FIRMWARE=".pio/build/$ENV/firmware.bin"
 BOOTLOADER=".pio/build/$ENV/bootloader.bin"
