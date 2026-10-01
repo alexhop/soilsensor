@@ -14,9 +14,10 @@
 
 - [ ] Nodes sometimes wake twice per cycle; root cause unknown
 
-## Other Probes
+## Legacy Probe Code
 
-These paths are kept but are not the focus.
+The firmware still contains code for probes that are not recommended. It is
+kept only so existing units keep building.
 
 - [ ] Analog probe occasionally reports a phantom fully-wet reading after
       wake, even with the 300 ms settle time and discarded first read
