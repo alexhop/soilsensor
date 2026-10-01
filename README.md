@@ -220,18 +220,6 @@ the 0% and 100% points on the server.
 
 The assembly guide has its own troubleshooting section for the hardware.
 
-## Other Probes
-
-The firmware also contains code paths for two other probes that were tried
-before settling on the Catnip. They compile but have no predefined
-environment; enable them with `build_flags`:
-
-| Hardware | Flags | Notes |
-|----------|-------|-------|
-| Adafruit STEMMA Soil Sensor (I2C `0x36`), optional SHT41 and SCD-41 | `-DCATNIP_SOIL=false`, plus `-DSCD41_ENABLED=true` for CO2 | Moisture unit is `raw`; adds `-air-temp`, `-humidity`, `-co2` readings |
-| Seeed XIAO soil moisture board (analog) | `-DCATNIP_SOIL=false -DANALOG_SOIL=true` | Moisture unit is `mV`, inverted: lower is wetter |
-| Solar panel voltage sense | `-DSOLAR_ENABLED=true -DSENSOR_POWER_PIN=D9` | Uses D1 for the panel divider, so the MOSFET gate has to move; adds a `-solar` reading |
-
 ## Directory Structure
 
 ```
