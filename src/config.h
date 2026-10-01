@@ -2,8 +2,8 @@
 #define CONFIG_H
 
 // ─── Build ───────────────────────────────────────────────────
-#define BUILD_NUMBER    19
-#define FW_VERSION      "0.10.0"
+#define BUILD_NUMBER    20
+#define FW_VERSION      "0.11.0"
 
 // ─── Device Identity ───────────────────────────────────────
 // Each physical sensor node gets a unique prefix.
