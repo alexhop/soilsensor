@@ -164,7 +164,11 @@ bool sensorsInit() {
     Serial.println("[sensors] Analog soil sensor: PWM excitation started on D3");
     return true;
 #elif CATNIP_SOIL
-    // Catnip/Chirp I2C soil sensor
+    // Catnip/Chirp I2C soil sensor. Its ground returns through the MOSFET,
+    // so it is unpowered until the gate goes high.
+    pinMode(SENSOR_POWER_PIN, OUTPUT);
+    digitalWrite(SENSOR_POWER_PIN, HIGH);
+
     Wire.begin(I2C_SDA, I2C_SCL);
     Wire.setClock(100000);
     delay(100);
@@ -447,8 +451,10 @@ void sensorsPowerOff() {
 #if ANALOG_SOIL
     Serial.println("[sensors] Analog soil — no MOSFET to power off");
 #elif CATNIP_SOIL
+    // sleep() covers a probe wired straight to GND; the MOSFET covers the rest.
     catnip.sleep();
-    Serial.println("[sensors] Catnip sleep mode");
+    digitalWrite(SENSOR_POWER_PIN, LOW);
+    Serial.println("[sensors] Catnip off (sleep + MOSFET LOW)");
 #else
     digitalWrite(SENSOR_POWER_PIN, LOW);
     Serial.println("[sensors] Power off (MOSFET LOW)");

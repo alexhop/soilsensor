@@ -20,7 +20,7 @@
 
 // Must match SENSOR_POWER_PIN in src/config.h for your build.
 #ifndef SENSOR_POWER_PIN
-#define SENSOR_POWER_PIN  D9
+#define SENSOR_POWER_PIN  D1
 #endif
 #define I2C_SDA           D4
 #define I2C_SCL           D5

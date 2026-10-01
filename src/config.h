@@ -2,8 +2,8 @@
 #define CONFIG_H
 
 // ─── Build ───────────────────────────────────────────────────
-#define BUILD_NUMBER    18
-#define FW_VERSION      "0.9.0"
+#define BUILD_NUMBER    19
+#define FW_VERSION      "0.10.0"
 
 // ─── Device Identity ───────────────────────────────────────
 // Each physical sensor node gets a unique prefix.
@@ -36,11 +36,12 @@
 
 // ─── Pins (XIAO ESP32C6 silk labels) ──────────────────────
 #ifndef SENSOR_POWER_PIN
-#define SENSOR_POWER_PIN  D9    // MOSFET gate — sensor power control
+#define SENSOR_POWER_PIN  D1    // MOSFET gate — sensor power control
 #endif
 #define I2C_SDA           D4    // I2C data
 #define I2C_SCL           D5    // I2C clock
 #define BATTERY_ADC_PIN   D0    // Battery voltage via divider (GPIO0, ADC capable)
+// Shares D1 with the default MOSFET gate: move SENSOR_POWER_PIN before enabling solar sense.
 #define SOLAR_ADC_PIN     D1    // Solar panel voltage via divider (GPIO1, ADC capable)
 
 // ─── I2C Addresses ────────────────────────────────────────
@@ -77,7 +78,7 @@
 
 // ─── Features ─────────────────────────────────────────────
 #ifndef SCD41_ENABLED
-#define SCD41_ENABLED       true      // SCD-41 wired up
+#define SCD41_ENABLED       false     // Set true when an SCD-41 is wired up (STEMMA builds)
 #endif
 
 // ─── Analog Soil Sensor (XIAO Soil Sensor board) ─────────
@@ -110,8 +111,9 @@
 // I2C address 0x20 (configurable). Returns raw capacitance values.
 // Read protocol: first read returns PREVIOUS measurement and triggers
 // a new one. Poll isBusy(), then read again for fresh data.
+// This is the default probe. Set false to use the STEMMA or analog probe.
 #ifndef CATNIP_SOIL
-#define CATNIP_SOIL         false
+#define CATNIP_SOIL         true
 #endif
 
 #if CATNIP_SOIL && ANALOG_SOIL
@@ -161,7 +163,7 @@
 // Voltage divider on solar panel input (CN3065 IN+).
 // Same 220kΩ/220kΩ divider halves the panel voltage for ADC.
 #ifndef SOLAR_ENABLED
-#define SOLAR_ENABLED    true
+#define SOLAR_ENABLED    false
 #endif
 #define SOLAR_R1         220000.0f
 #define SOLAR_R2         220000.0f
